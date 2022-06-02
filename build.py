@@ -51,21 +51,26 @@ def build_tumbon_resource(data: list) -> list:
     districts = list(map(lambda d: {
         'provinceKey': d[0][0:2],
         'districtKey': d[0][0:4],
-        'districtName': d[1],
-        'subdistricts': list(map(lambda d: d['name'], subdistricts_map[d[0][0:4]]))
+        'districtName': clean_district_name(d[1]),
+        'subdistricts': subdistricts_map[d[0][0:4]]
     }, filter(lambda d: d[0].endswith('0000') and not d[0].endswith('000000'), raw)))
     districts_map = reduce(lambda acc, d: build_map(acc, d['provinceKey'], {
-        'district': d['districtName'],
+        'name': d['districtName'],
         'subdistricts': d['subdistricts']
     }), districts, {})
 
     provinces = list(map(lambda d: {
-        'province': d[1],
+        'name': d[1],
         'districts': districts_map[d[0][0:2]]
     }, filter(lambda d: d[0].endswith('000000'), raw)))
 
     return provinces
 
+
+def clean_district_name(name: str) -> str:
+    if name.startswith('เขต'):
+        return name[3:]
+    return name
 
 def build_map(map_value: map, key: str, value: tuple) -> map:
     if key not in map_value:
