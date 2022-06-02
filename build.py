@@ -10,12 +10,14 @@ TUMBON_RESOURCE_URL='https://stat.bora.dopa.go.th/dload/ccaatt.xlsx'
 WORKING_FILE='_tmp.xlsx'
 RESULT_FILE='structured_data.json'
 
+
 def fetch_tumbon_resource():
     with requests.get(TUMBON_RESOURCE_URL, stream=True) as resp:
         resp.raise_for_status()
         with open(WORKING_FILE, 'wb') as tmpf:
             for chunk in resp.iter_content(chunk_size = 8192):
                 tmpf.write(chunk)
+
 
 def parse_tumbon_resource() -> tuple[list, bool, str]:
     xlsx = pandas.ExcelFile(WORKING_FILE)
@@ -33,6 +35,7 @@ def parse_tumbon_resource() -> tuple[list, bool, str]:
 
     return (valid_data_frame.values.tolist(), True, None)
 
+
 def build_tumbon_resource(data: list) -> list:
     raw = list(map(lambda d: ['{}'.format(d[0]), d[1]], data))
 
@@ -42,35 +45,34 @@ def build_tumbon_resource(data: list) -> list:
         'subdistrictName': d[1]
     }, filter(lambda d: not d[0].endswith('0000'), raw)))
     subdistricts_map = reduce(lambda acc, d: build_map(acc, d['districtKey'], {
-        'subdistrictKey': d['subdistrictKey'],
-        'subdistrictName': d['subdistrictName'],
+        'name': d['subdistrictName'],
     }), subdistricts, {})
 
     districts = list(map(lambda d: {
         'provinceKey': d[0][0:2],
         'districtKey': d[0][0:4],
         'districtName': d[1],
-        'subdistricts': subdistricts_map[d[0][0:4]]
+        'subdistricts': list(map(lambda d: d['name'], subdistricts_map[d[0][0:4]]))
     }, filter(lambda d: d[0].endswith('0000') and not d[0].endswith('000000'), raw)))
     districts_map = reduce(lambda acc, d: build_map(acc, d['provinceKey'], {
-        'districtKey': d['districtKey'],
-        'districtName': d['districtName'],
+        'district': d['districtName'],
         'subdistricts': d['subdistricts']
     }), districts, {})
 
     provinces = list(map(lambda d: {
-        'provinceKey': d[0][0:2],
-        'provinceName': d[1],
+        'province': d[1],
         'districts': districts_map[d[0][0:2]]
     }, filter(lambda d: d[0].endswith('000000'), raw)))
 
     return provinces
+
 
 def build_map(map_value: map, key: str, value: tuple) -> map:
     if key not in map_value:
         map_value[key] = []
     map_value[key].append(value)
     return map_value
+
 
 def export(data: list, minified: bool):
     with open(RESULT_FILE, 'w') as tmpf:
@@ -83,11 +85,11 @@ def export(data: list, minified: bool):
 logging.basicConfig(level=logging.DEBUG)
 if __name__ == '__main__':
     buildProd = False
-    if len(sys.argv) > 1 and sys.argv[1] == 'prod':
+    if len(sys.argv) > 1 and sys.argv[1] == '-prod':
         buildProd = True
 
     logging.info('Fetch resource ...')
-    # fetch_tumbon_resource()
+    fetch_tumbon_resource()
 
     logging.info('Parsing resource ...')
     (data, ok, err) = parse_tumbon_resource()
