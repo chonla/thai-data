@@ -208,10 +208,12 @@ def build_tumbon_resource(data: list, zip_data: map) -> list:
         'subdistrictName': d[1]
     }, filter(lambda d: not d[0].endswith('0000'), raw)))
     subdistricts_map = reduce(lambda acc, d: build_map(acc, d['districtKey'], {
-        'name': d['subdistrictName']
+        'name': d['subdistrictName'],
+        'code': d['subdistrictKey']
     }), subdistricts, {})
 
     districts = list(map(lambda d: {
+        'code': d[0],
         'provinceKey': d[0][0:2],
         'districtKey': d[0][0:4],
         'districtName': clean_district_name(d[1]),
@@ -220,14 +222,17 @@ def build_tumbon_resource(data: list, zip_data: map) -> list:
     }, filter(lambda d: d[0].endswith('0000') and not d[0].endswith('000000'), raw)))
     districts_map = reduce(lambda acc, d: build_map(acc, d['provinceKey'], {
         'name': d['districtName'],
+        'code': d['code'],
         'subdistricts': list(map(lambda s: {
             'name': s['name'],
+            'code': s['code'],
             'zip': get_zip(zip_data[d['districtName']], s['name'])
         }, d['subdistricts'])),
     }), districts, {})
 
     provinces = list(map(lambda d: {
         'name': d[1],
+        'code': d[0],
         'districts': districts_map[d[0][0:2]]
     }, filter(lambda d: d[0].endswith('000000'), raw)))
 
