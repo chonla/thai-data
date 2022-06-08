@@ -10,11 +10,16 @@ import sys
 import re
 import xml.etree.ElementTree as ET
 import regex
+import pathlib
 
 TUMBON_RESOURCE_URL='https://stat.bora.dopa.go.th/dload/ccaatt.xlsx'
 ZIP_RESOURCE_URL='https://th.wikipedia.org/wiki/รายการรหัสไปรษณีย์ไทย'
 WORKING_FILE='_tmp.xlsx'
-RESULT_FILE='structured_data.json'
+STRUCTURED_RESULT_FILE='structured_data.json'
+FLATTENED_RESULT_FILE='flattened_data.json'
+DIST_DIR='dist/'
+SRC_DIR='src/'
+INDEX_JS_FILE='index.mjs'
 
 def fetch_tumbon_resource():
     with requests.get(TUMBON_RESOURCE_URL, stream=True) as resp:
@@ -244,6 +249,7 @@ def clean_district_name(name: str) -> str:
         return name[3:]
     return name
 
+
 def build_map(map_value: map, key: str, value: tuple) -> map:
     if key not in map_value:
         map_value[key] = []
@@ -251,13 +257,42 @@ def build_map(map_value: map, key: str, value: tuple) -> map:
     return map_value
 
 
-def export(data: list, minify: bool):
-    with open(RESULT_FILE, 'w') as tmpf:
+def export(data: list, output_file: str, minify: bool):
+    with open(output_file, 'w') as tmpf:
         content = json.dumps(data, indent=2, ensure_ascii=False)
         if minify:
             content = jsmin(content)
         tmpf.write(content)
 
+
+def flat_structured_data(data: list) -> list:
+    out = []
+    for province in data:
+        province_name = province['name']
+        for district in province['districts']:
+            district_name = district['name']
+            for subdistrict in district['subdistricts']:
+                out.append({
+                    "province": province_name,
+                    "district": district_name,
+                    "subdistrict": subdistrict['name'],
+                    "zip": subdistrict['zip'],
+                    "subdistrictCode": subdistrict['code'],
+                    "districtCode": district['code'],
+                    "provinceCode": province['code']
+                })
+    return out
+
+
+def apply_template(input_file: str, output_file: str, data: map, minify: bool):
+    with open(input_file, 'r') as tmpf:
+        content = tmpf.read()
+        for key in data:
+            content = content.replace(key, jsmin(json.dumps(data[key], indent=2, ensure_ascii=False)))
+        with open(output_file, 'w') as tmpof:
+            if minify:
+                content = jsmin(content)
+            tmpof.write(content)
 
 logging.basicConfig(level=logging.INFO)
 if __name__ == '__main__':
@@ -265,6 +300,13 @@ if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == '-prod':
         logging.info('Building production output ...')
         build_prod = True
+
+    indexjs_input = f"{SRC_DIR}{INDEX_JS_FILE}"
+    indexjs_output = f"{DIST_DIR}{INDEX_JS_FILE}"
+    structured_output = f"{DIST_DIR}{STRUCTURED_RESULT_FILE}"
+    flattened_output = f"{DIST_DIR}{FLATTENED_RESULT_FILE}"
+    if not pathlib.Path(DIST_DIR).exists():
+        pathlib.Path(DIST_DIR).mkdir()
 
     logging.info('Fetch resource ...')
     fetch_tumbon_resource()
@@ -278,6 +320,15 @@ if __name__ == '__main__':
 
     logging.info('Rebuild resource ...')
     structured_data = build_tumbon_resource(data, zip_data)
+    flattened_data = flat_structured_data(structured_data)
     
     logging.info('Writing structured result ...')
-    export(structured_data, build_prod)
+    export(structured_data, structured_output, build_prod)
+
+    logging.info('Writing flattened result ...')
+    export(flattened_data, flattened_output, build_prod)
+
+    logging.info('Writing node package ...')
+    apply_template(indexjs_input, indexjs_output, {
+        '[/* ADDRESSES */]': flattened_data
+    }, build_prod)
