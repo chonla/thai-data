@@ -19,7 +19,7 @@ STRUCTURED_RESULT_FILE='structured_data.json'
 FLATTENED_RESULT_FILE='flattened_data.json'
 DIST_DIR='dist/'
 SRC_DIR='src/'
-INDEX_JS_FILE='index.mjs'
+INDEX_TS_FILE='index.ts'
 
 def fetch_tumbon_resource():
     with requests.get(TUMBON_RESOURCE_URL, stream=True) as resp:
@@ -301,8 +301,8 @@ if __name__ == '__main__':
         logging.info('Building production output ...')
         build_prod = True
 
-    indexjs_input = f"{SRC_DIR}{INDEX_JS_FILE}"
-    indexjs_output = f"{DIST_DIR}{INDEX_JS_FILE}"
+    indexts_input = f"{SRC_DIR}{INDEX_TS_FILE}"
+    indexts_output = f"{DIST_DIR}{INDEX_TS_FILE}"
     structured_output = f"{DIST_DIR}{STRUCTURED_RESULT_FILE}"
     flattened_output = f"{DIST_DIR}{FLATTENED_RESULT_FILE}"
     if not pathlib.Path(DIST_DIR).exists():
@@ -329,6 +329,6 @@ if __name__ == '__main__':
     export(flattened_data, flattened_output, build_prod)
 
     logging.info('Writing node package ...')
-    apply_template(indexjs_input, indexjs_output, {
+    apply_template(indexts_input, indexts_output, {
         '[/* ADDRESSES */]': flattened_data
     }, build_prod)
