@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-const addresses = [/* ADDRESSES */];
+const addresses: ThaiAddrRecord[] = [/* ADDRESSES */];
 
 export interface ThaiAddrRecord {
     province: string;
@@ -20,36 +20,36 @@ export interface ThaiAddrMiniRecord {
 class ThaiAddrClass {
     _dataVersion: string = /* ADDRESSES_VERSION */;
 
-    constructor() {}
+    constructor() { }
 
     findByZip(zipCode: string): ThaiAddrRecord[] {
-        return _.filter(addresses, (addr: ThaiAddrRecord) => addr.zip === zipCode);
+        return _.filter(addresses, (addr: ThaiAddrRecord): boolean => addr.zip === zipCode);
     }
 
-    findBySubdistrictCode(code): ThaiAddrRecord {
-        return _.head(_.filter(addresses, (addr: ThaiAddrRecord) => addr.subdistrictCode === code));
+    findBySubdistrictCode(code: string): ThaiAddrRecord | undefined {
+        return _.head(_.filter(addresses, (addr: ThaiAddrRecord): boolean => addr.subdistrictCode === code));
     }
 
     zips(): string[] {
-        return _.sortBy(_.uniq(_.map(addresses, (addr) => addr.zip)));
+        return _.sortBy(_.uniq(_.map(addresses, (addr: ThaiAddrRecord): string => addr.zip)));
     }
 
-    provinces(): string[] {
-        return _.sortBy(_.uniqBy(_.map(addresses, (addr) => ({
+    provinces(): ThaiAddrMiniRecord[] {
+        return _.sortBy(_.uniqBy(_.map(addresses, (addr: ThaiAddrRecord): ThaiAddrMiniRecord => ({
             name: addr.province,
             code: addr.provinceCode
         })), 'code'), 'name');
     }
 
     districts(code: string): ThaiAddrMiniRecord[] {
-        return _.map(_.sortBy(_.uniqBy(_.filter(addresses, (addr) => addr.provinceCode === code), 'districtCode'), 'district'), (addr) => ({
+        return _.map(_.sortBy(_.uniqBy(_.filter(addresses, (addr: ThaiAddrRecord): boolean => addr.provinceCode === code), 'districtCode'), 'district'), (addr: ThaiAddrRecord): ThaiAddrMiniRecord => ({
             name: addr.district,
             code: addr.districtCode
         }));
     }
 
     subdistricts(code: string): ThaiAddrMiniRecord[] {
-        return _.map(_.sortBy(_.uniqBy(_.filter(addresses, (addr) => addr.districtCode === code), 'subdistrictCode'), 'subdistrict'), (addr) => ({
+        return _.map(_.sortBy(_.uniqBy(_.filter(addresses, (addr: ThaiAddrRecord): boolean => addr.districtCode === code), 'subdistrictCode'), 'subdistrict'), (addr: ThaiAddrRecord): ThaiAddrMiniRecord => ({
             name: addr.subdistrict,
             code: addr.subdistrictCode
         }));
