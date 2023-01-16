@@ -1,3 +1,5 @@
 _tmp.xlsx
+_tmp.json
 .vscode/
 node_modules/
+dist/

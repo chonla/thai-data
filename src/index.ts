@@ -18,6 +18,8 @@ export interface ThaiAddrMiniRecord {
 }
 
 class ThaiAddrClass {
+    _dataVersion: string = /* ADDRESSES_VERSION */;
+
     constructor() {}
 
     findByZip(zipCode: string): ThaiAddrRecord[] {
@@ -51,6 +53,10 @@ class ThaiAddrClass {
             name: addr.subdistrict,
             code: addr.subdistrictCode
         }));
+    }
+
+    dataVersion(): string {
+        return this._dataVersion;
     }
 };
 

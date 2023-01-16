@@ -14,7 +14,8 @@ import pathlib
 
 TUMBON_RESOURCE_URL='https://stat.bora.dopa.go.th/dload/ccaatt.xlsx'
 ZIP_RESOURCE_URL='https://th.wikipedia.org/wiki/รายการรหัสไปรษณีย์ไทย'
-WORKING_FILE='_tmp.xlsx'
+WORKING_FILE_TUMBON='_tmp.xlsx'
+WORKING_FILE_ZIP='_tmp.json'
 STRUCTURED_RESULT_FILE='structured_data.json'
 FLATTENED_RESULT_FILE='flattened_data.json'
 DIST_DIR='dist/'
@@ -24,7 +25,7 @@ INDEX_TS_FILE='index.ts'
 def fetch_tumbon_resource():
     with requests.get(TUMBON_RESOURCE_URL, stream=True) as resp:
         resp.raise_for_status()
-        with open(WORKING_FILE, 'wb') as tmpf:
+        with open(WORKING_FILE_TUMBON, 'wb') as tmpf:
             for chunk in resp.iter_content(chunk_size = 8192):
                 tmpf.write(chunk)
 
@@ -33,7 +34,7 @@ def fetch_zip_resource() -> map:
     # web scraping from wiki
     with requests.get(ZIP_RESOURCE_URL, verify=False) as resp:
         zip_content = resp.text
-        zip_match = re.findall(r'(<table class="wikitable sortable".*?</table>)', zip_content, re.S + re.U)
+        zip_match = re.findall(r'(<table class="wikitable sortable.*?</table>)', zip_content, re.S + re.U)
         clean_zip = list(map(lambda z: z.replace("\n", '').replace("<i>", "").replace("</i>", "").replace("<br>", "").replace("<br />", "").replace('<td></td>', '<td>-</td>'), zip_match))
         district_zip = list(map(lambda z: extract_descriptive_zip(z), clean_zip))
     flattened_district_zip = list(itertools.chain(*district_zip))
@@ -44,6 +45,8 @@ def fetch_zip_resource() -> map:
             'primary': zip['zips'][0],
             'exceptional': zip['exceptionals']
         }
+    with open(WORKING_FILE_ZIP, 'w') as tmpf:
+        json.dump(flattened_district_map, tmpf, indent = 4, ensure_ascii = False)
     return flattened_district_map
 
 
@@ -181,8 +184,8 @@ def extract_subdistrict(addr: str) -> map:
     return subdistrict
 
 
-def parse_tumbon_resource() -> tuple[list, bool, str]:
-    xlsx = pandas.ExcelFile(WORKING_FILE)
+def parse_tumbon_resource() -> tuple[list, str, bool, str]:
+    xlsx = pandas.ExcelFile(WORKING_FILE_TUMBON)
 
     logging.info('- Validating resource ...')
     data_header = pandas.read_excel(xlsx, sheet_name=0, header=None, nrows=5)
@@ -195,7 +198,17 @@ def parse_tumbon_resource() -> tuple[list, bool, str]:
     data_frame = pandas.read_excel(xlsx, sheet_name=0, header=None, skiprows=5, usecols=[0, 1, 3], names = ['Code', 'Name', 'Obsolete'])
     valid_data_frame = data_frame[data_frame.Obsolete == 0].drop(['Obsolete'], axis=1)
 
-    return (valid_data_frame.values.tolist(), True, None)
+    version_marker_row_num = len(data_frame) + 5
+    version_marker = pandas.read_excel(xlsx, sheet_name=0, header=None, skiprows=version_marker_row_num - 1, nrows=1)
+    marked_version = version_marker.iat[0, 0].strip()
+    version_matches = regex.findall(r'^\* update (\d+)$', marked_version)
+    data_version = 'unknown'
+    if version_matches:
+        data_version = version_matches[0]
+
+    logging.info(f'- Tumbon data version: {data_version}')
+
+    return (valid_data_frame.values.tolist(), data_version, True, None)
 
 
 def get_zip(zip_info: map, subdistrict_name: str) -> str:
@@ -308,17 +321,17 @@ if __name__ == '__main__':
     if not pathlib.Path(DIST_DIR).exists():
         pathlib.Path(DIST_DIR).mkdir()
 
-    logging.info('Fetch resource ...')
+    logging.info('Fetch resources ...')
     fetch_tumbon_resource()
     zip_data = fetch_zip_resource()
 
-    logging.info('Parsing resource ...')
-    (data, ok, err) = parse_tumbon_resource()
+    logging.info('Parsing resources ...')
+    (data, data_version, ok, err) = parse_tumbon_resource()
     if not ok:
         logging.error('Unable to parse resource - {}'.format(err))
         exit(1)
 
-    logging.info('Rebuild resource ...')
+    logging.info('Rebuild resources ...')
     structured_data = build_tumbon_resource(data, zip_data)
     flattened_data = flat_structured_data(structured_data)
     
@@ -330,5 +343,6 @@ if __name__ == '__main__':
 
     logging.info('Writing node package ...')
     apply_template(indexts_input, indexts_output, {
-        '[/* ADDRESSES */]': flattened_data
+        '[/* ADDRESSES */]': flattened_data,
+        '/* ADDRESSES_VERSION */': data_version
     }, build_prod)
