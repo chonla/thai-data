@@ -17,7 +17,7 @@ export interface ThaiAddrMiniRecord {
     code: string;
 }
 
-class ThaiAddrClass {
+class ThaiAddr {
     _dataVersion: string = /* ADDRESSES_VERSION */;
 
     constructor() { }
@@ -59,7 +59,5 @@ class ThaiAddrClass {
         return this._dataVersion;
     }
 };
-
-const ThaiAddr: ThaiAddrClass = new ThaiAddrClass();
 
 export default ThaiAddr;
