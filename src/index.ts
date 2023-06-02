@@ -34,7 +34,13 @@ class ThaiAddr {
         return _.sortBy(_.uniq(_.map(addresses, (addr: ThaiAddrRecord): string => addr.zip)));
     }
 
-    provinces(): ThaiAddrMiniRecord[] {
+    provinces(zipCode?: string): ThaiAddrMiniRecord[] {
+        if (!!zipCode) {
+            return _.sortBy(_.uniqBy(_.map(_.filter(addresses, (addr: ThaiAddrRecord): boolean => addr.zip === zipCode), (addr: ThaiAddrRecord): ThaiAddrMiniRecord => ({
+                name: addr.province,
+                code: addr.provinceCode
+            })), 'code'), 'name');
+        }
         return _.sortBy(_.uniqBy(_.map(addresses, (addr: ThaiAddrRecord): ThaiAddrMiniRecord => ({
             name: addr.province,
             code: addr.provinceCode
