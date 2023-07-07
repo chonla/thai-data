@@ -3,3 +3,6 @@ pandas
 openpyxl
 jsmin
 regex
+pytest
+black
+flake8

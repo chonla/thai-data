@@ -4,7 +4,7 @@ This repository is used for generating Thai Address Data and relevant contents.
 
 ## Data Version
 
-- 25651201
+- 25660601
 
 ## Node Package
 

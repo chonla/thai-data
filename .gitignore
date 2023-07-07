@@ -3,3 +3,5 @@ _tmp.json
 .vscode/
 node_modules/
 dist/
+.DS_Store
+__pycache__
