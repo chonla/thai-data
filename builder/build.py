@@ -11,6 +11,7 @@ import re
 import xml.etree.ElementTree as ET
 import regex
 import pathlib
+import random
 
 TUMBON_RESOURCE_URL = "https://stat.bora.dopa.go.th/dload/ccaatt.xlsx"
 ZIP_RESOURCE_URL = "https://th.wikipedia.org/wiki/รายการรหัสไปรษณีย์ไทย"
@@ -25,8 +26,9 @@ REQUEST_HEADERS = {"Cache-Control": "no-cache", "Pragma": "no-cache"}
 
 
 def fetch_tumbon_resource():
+    r = random.random()
     with requests.get(
-        TUMBON_RESOURCE_URL, stream=True, headers=REQUEST_HEADERS
+        f"{TUMBON_RESOURCE_URL}?__r={r}", stream=True, headers=REQUEST_HEADERS
     ) as resp:
         resp.raise_for_status()
         with open(WORKING_FILE_TUMBON, "wb") as tmpf:
@@ -36,7 +38,8 @@ def fetch_tumbon_resource():
 
 def fetch_zip_resource() -> map:
     # web scraping from wiki
-    with requests.get(ZIP_RESOURCE_URL, verify=False, headers=REQUEST_HEADERS) as resp:
+    r = random.random()
+    with requests.get(f"{ZIP_RESOURCE_URL}?__r={r}", verify=False, headers=REQUEST_HEADERS) as resp:
         zip_content = resp.text
         zip_match = re.findall(
             r'(<table class="wikitable sortable.*?</table>)', zip_content, re.S + re.U
