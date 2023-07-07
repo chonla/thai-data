@@ -39,7 +39,9 @@ def fetch_tumbon_resource():
 def fetch_zip_resource() -> map:
     # web scraping from wiki
     r = random.random()
-    with requests.get(f"{ZIP_RESOURCE_URL}?__r={r}", verify=False, headers=REQUEST_HEADERS) as resp:
+    with requests.get(
+        f"{ZIP_RESOURCE_URL}?__r={r}", verify=False, headers=REQUEST_HEADERS
+    ) as resp:
         zip_content = resp.text
         zip_match = re.findall(
             r'(<table class="wikitable sortable.*?</table>)', zip_content, re.S + re.U
@@ -112,11 +114,11 @@ def extract_exceptional_zips(data: str) -> dict:
 
     data = data[6:].strip()
 
-    if "− " in data or "- " in data:
+    if "− " in data or "- " in data or "– " in data:
         logging.debug("multiline exceptionals detected")
         exceptional_rows = [
             f"ยกเว้น{row}"
-            for row in re.split(r"[−-] ", data, flags=re.UNICODE)
+            for row in re.split(r"(−|-|–) ", data, flags=re.UNICODE)
             if row.strip() != ""
         ]
         multiline_zips = [extract_exceptional_zips(row) for row in exceptional_rows]
