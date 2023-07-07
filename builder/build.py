@@ -91,7 +91,7 @@ def extract_row_zip(zip_row: Element) -> dict:
     }
 
 
-def extract_district_name(data: str) -> str:
+def extract_subdistrict_name(data: str) -> str:
     matches = re.match(r"(ตำบล|แขวง)(.+)", data, re.UNICODE)
     if matches:
         return matches[2]
@@ -130,7 +130,7 @@ def extract_exceptional_zips(data: str) -> dict:
         return {}
 
     provinces = [
-        extract_district_name(prov)
+        extract_subdistrict_name(prov)
         for prov in re.split(r"(\s+|และ)", data, flags=re.UNICODE)
         if prov.strip() != "" and prov.strip() != "และ"
     ]
