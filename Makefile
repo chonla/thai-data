@@ -24,4 +24,4 @@ lint:
 
 # Check if there any updated data version
 check:
-	python ./builder/build.py -check
+	python ./builder/build.py -check -log=info

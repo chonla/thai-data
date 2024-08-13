@@ -6,7 +6,7 @@ def test_default_options():
 
     result = parse_options(options)
 
-    assert result == {"prod": False, "log": "info"}
+    assert result == {"check": False, "prod": False, "log": "info"}
 
 
 def test_prod_options():
@@ -14,7 +14,15 @@ def test_prod_options():
 
     result = parse_options(options)
 
-    assert result == {"prod": True, "log": "info"}
+    assert result == {"check": False, "prod": True, "log": "info"}
+
+
+def test_check_options():
+    options = ["-check"]
+
+    result = parse_options(options)
+
+    assert result == {"check": True, "prod": False, "log": "info"}
 
 
 def test_info_options():
@@ -22,7 +30,7 @@ def test_info_options():
 
     result = parse_options(options)
 
-    assert result == {"prod": False, "log": "info"}
+    assert result == {"check": False, "prod": False, "log": "info"}
 
 
 def test_debug_options():
@@ -30,7 +38,7 @@ def test_debug_options():
 
     result = parse_options(options)
 
-    assert result == {"prod": False, "log": "debug"}
+    assert result == {"check": False, "prod": False, "log": "debug"}
 
 
 def test_error_options():
@@ -38,7 +46,7 @@ def test_error_options():
 
     result = parse_options(options)
 
-    assert result == {"prod": False, "log": "error"}
+    assert result == {"check": False, "prod": False, "log": "error"}
 
 
 def test_prod_debug_options():
@@ -46,7 +54,7 @@ def test_prod_debug_options():
 
     result = parse_options(options)
 
-    assert result == {"prod": True, "log": "debug"}
+    assert result == {"check": False, "prod": True, "log": "debug"}
 
 
 def test_debug_prod_options():
@@ -54,4 +62,44 @@ def test_debug_prod_options():
 
     result = parse_options(options)
 
-    assert result == {"prod": True, "log": "debug"}
+    assert result == {"check": False, "prod": True, "log": "debug"}
+
+
+def test_check_debug_options():
+    options = ["-check", "-log=debug"]
+
+    result = parse_options(options)
+
+    assert result == {"check": True, "prod": False, "log": "debug"}
+
+
+def test_debug_check_options():
+    options = ["-log=debug", "-check"]
+
+    result = parse_options(options)
+
+    assert result == {"check": True, "prod": False, "log": "debug"}
+
+
+def test_prod_check_options():
+    options = ["-prod", "-check"]
+
+    result = parse_options(options)
+
+    assert result == {"check": True, "prod": True, "log": "info"}
+
+
+def test_check_prod_options():
+    options = ["-check", "-prod"]
+
+    result = parse_options(options)
+
+    assert result == {"check": True, "prod": True, "log": "info"}
+
+
+def test_check_prod_debug_options():
+    options = ["-check", "-prod", "-log=debug"]
+
+    result = parse_options(options)
+
+    assert result == {"check": True, "prod": True, "log": "debug"}
