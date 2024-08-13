@@ -40,7 +40,7 @@ def fetch_zip_resource() -> map:
     # web scraping from wiki
     r = random.random()
     with requests.get(
-        f"{ZIP_RESOURCE_URL}?__r={r}", verify=False, headers=REQUEST_HEADERS
+        f"{ZIP_RESOURCE_URL}?__r={r}", verify=True, headers=REQUEST_HEADERS
     ) as resp:
         zip_content = resp.text
         zip_match = re.findall(
@@ -376,15 +376,43 @@ def apply_template(input_file: str, output_file: str, data: map, minify: bool):
             tmpof.write(content)
 
 
-if __name__ == "__main__":
-    build_prod = False
+def parse_options(argv: list) -> dict:
+    known_log_levels = ["debug", "error", "info"]
+    known_options_resolver = {
+        "prod": lambda v: v.lower() == "true",
+        "log": lambda v: v.lower() if v.lower() in known_log_levels else "info",
+    }
+    known_options = {
+        "prod": False,
+        "log": "info",
+    }
+    for opt in argv:
+        if opt.startswith("-"):
+            optKeyPair = opt[1:].split("=", 2)
+            optKeyName = optKeyPair[0].lower()
+            optKeyValue = "true"
+            if len(optKeyPair) == 2:
+                optKeyValue = optKeyPair[1]
 
-    if len(sys.argv) > 1 and sys.argv[1] == "-prod":
-        logging.basicConfig(level=logging.INFO)
-        logging.info("Building production output ...")
-        build_prod = True
-    else:
+            if optKeyName in known_options:
+                known_options[optKeyName] = known_options_resolver[optKeyName](
+                    optKeyValue
+                )
+    return known_options
+
+
+if __name__ == "__main__":
+    options = parse_options(sys.argv)
+
+    if options["log"] == "debug":
         logging.basicConfig(level=logging.DEBUG)
+    elif options["log"] == "info":
+        logging.basicConfig(level=logging.INFO)
+    elif options["log"] == "error":
+        logging.basicConfig(level=logging.ERROR)
+
+    if options["prod"]:
+        logging.info("Building production output ...")
 
     indexts_input = f"{SRC_DIR}{INDEX_TS_FILE}"
     indexts_output = f"{DIST_DIR}{INDEX_TS_FILE}"
@@ -408,15 +436,15 @@ if __name__ == "__main__":
     flattened_data = flat_structured_data(structured_data)
 
     logging.info("Writing structured result ...")
-    export(structured_data, structured_output, build_prod)
+    export(structured_data, structured_output, options["prod"])
 
     logging.info("Writing flattened result ...")
-    export(flattened_data, flattened_output, build_prod)
+    export(flattened_data, flattened_output, options["prod"])
 
     logging.info("Writing node package ...")
     apply_template(
         indexts_input,
         indexts_output,
         {"[/* ADDRESSES */]": flattened_data, "/* ADDRESSES_VERSION */": data_version},
-        build_prod,
+        options["prod"],
     )
