@@ -15,7 +15,9 @@ import random
 
 TUMBON_RESOURCE_URL = "https://stat.bora.dopa.go.th/dload/ccaatt.xlsx"
 ZIP_RESOURCE_URL = "https://th.wikipedia.org/wiki/รายการรหัสไปรษณีย์ไทย"
-RECENTLY_BUILT_INDEX = "https://raw.githubusercontent.com/chonla/thai-address/master/index.ts"
+RECENTLY_BUILT_INDEX = (
+    "https://raw.githubusercontent.com/chonla/thai-address/master/index.ts"
+)
 WORKING_FILE_TUMBON = "_tmp.xlsx"
 WORKING_FILE_ZIP = "_tmp.json"
 STRUCTURED_RESULT_FILE = "structured_data.json"
@@ -411,14 +413,11 @@ def get_recently_published_data_version() -> str:
         f"{RECENTLY_BUILT_INDEX}?__r={r}", verify=True, headers=REQUEST_HEADERS
     ) as resp:
         index_content = resp.text
-        data_match = re.search(
-            r'_dataVersion:string="(\d+)"',
-            index_content
-        )
+        data_match = re.search(r'_dataVersion:string="(\d+)"', index_content)
         if data_match:
             return data_match.group(1)  # Get the captured group (the digits)
         logging.error("No data version found on recently published release.")
-        return ("")
+        return ""
 
 
 if __name__ == "__main__":
@@ -450,12 +449,16 @@ if __name__ == "__main__":
     if not ok:
         logging.error("Unable to parse resource - {}".format(err))
         exit(1)
-        
+
     if options["check"]:
         if get_recently_published_data_version() != data_version:
             logging.info("Newer data version detected: {}".format(data_version))
         else:
-            logging.info("The recent release has been up-to-date with version: {}".format(data_version))
+            logging.info(
+                "The recent release has been up-to-date with version: {}".format(
+                    data_version
+                )
+            )
         exit(0)
 
     logging.info("Rebuild resources ...")
